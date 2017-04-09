@@ -49,33 +49,26 @@ class PerspectiveTaskView(gui3d.TaskView):
 
     def __init__(self, category):
         gui3d.TaskView.__init__(self, category, 'Perspective')
-
+        self.isOrthoView = True
 
         projbox = self.addLeftWidget(gui.GroupBox('Projection'))
 
         self.projRadioButtonGroup = []
 
         self.persButton = projbox.addWidget(gui.RadioButton(self.projRadioButtonGroup, 'Perspective',selected=G.app.modelCamera.projection))
-
         @self.persButton.mhEvent
         def onClicked(event):
-            for camera in G.cameras:
-                camera.switchToPerspective()
-            if G.app.backgroundGradient:
-                G.app.removeObject(G.app.backgroundGradient)
-            G.app.backgroundGradient = None
-            # G.app.modelCamera.updateCamera()
+            self.toggleView()
+            self.isOrthoView=False
 
         self.orthButton = projbox.addWidget(gui.RadioButton(self.projRadioButtonGroup, 'Orthogonal',selected=not G.app.modelCamera.projection))
-
         @self.orthButton.mhEvent
         def onClicked(event):
-            for camera in G.cameras:
-                camera.switchToOrtho()
-            if not G.app.backgroundGradient:
-                G.app.loadBackgroundGradient()
+            self.toggleView()
+            self.isOrthoView = True
 
-        self.fovslider = projbox.addWidget(gui.Slider(label=['Camera focus', '= %.2f'], min=25.0, max=130.0, value=90.0))
+
+        self.fovslider = projbox.addWidget(gui.Slider(label='Camera focus= %.2f', min=25.0, max=130.0, value=90.0))
         @self.fovslider.mhEvent
         def onChange(value):
             for camera in G.cameras:
@@ -113,8 +106,23 @@ class PerspectiveTaskView(gui3d.TaskView):
             self.yposslider.setValue (0.0)
             self.zposslider.setValue (0.0)
             G.app.selectedHuman.setPosition(self.humanPos)
-            self.updateFrame()
 
+    def toggleView(self):
+        if self.isOrthoView:
+            for camera in G.cameras:
+                camera.switchToPerspective()
+            if G.app.backgroundGradient:
+                G.app.removeObject(G.app.backgroundGradient)
+                G.app.backgroundGradient = None
+            self.persButton.setSelected(True)
+            self.orthButton.setSelected(False)
+        else:
+            for camera in G.cameras:
+                camera.switchToOrtho()
+            if not G.app.backgroundGradient:
+                G.app.loadBackgroundGradient()
+            self.persButton.setSelected(False)
+            self.orthButton.setSelected(True)
 
 def load(app):
     category = app.getCategory('Community')
