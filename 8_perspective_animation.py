@@ -42,15 +42,7 @@ import mh
 import gui
 import gui3d
 import log
-from collections import OrderedDict
 from core import G
-import filechooser as fc
-
-import skeleton
-import getpath
-
-import numpy as np
-import os
 
 
 class PerspectiveTaskView(gui3d.TaskView):
@@ -58,50 +50,6 @@ class PerspectiveTaskView(gui3d.TaskView):
     def __init__(self, category):
         gui3d.TaskView.__init__(self, category, 'Perspective')
 
-        self.human = gui3d.app.selectedHuman
-        self.humanPos = [0.0, 0.0, 0.0]
-        self.currentframe = 0
-        self.framesloaded = 0
-
-        animbox = self.addLeftWidget(gui.GroupBox('Frames'))
-
-        self.avFramesText = animbox.addWidget(gui.TextView('Available frames: 0'))
-
-        self.playbackSlider = animbox.addWidget(gui.Slider(label=['Current frame', ': %d']))
-        self.playbackSlider.setMin(0)
-
-        @self.playbackSlider.mhEvent
-        def onChange(value):
-            self.currentframe = int(value)
-            self.updateFrame()
-        
-        self.nextframeButton = animbox.addWidget(gui.Button('Next frame'))
-
-        @self.nextframeButton.mhEvent
-        def onClicked(event):
-            anim = self.human.getActiveAnimation()
-            if anim:
-                if self.currentframe >= anim.nFrames-1:
-                    self.currentframe = 0
-                else:
-                    self.currentframe += 1
-
-                self.updateFrame()
-                self.playbackSlider.setValue(self.currentframe)
-
-        self.prevframeButton = animbox.addWidget(gui.Button('Previous frame'))
-
-        @self.prevframeButton.mhEvent
-        def onClicked(event):
-            anim = self.human.getActiveAnimation()
-            if anim:
-                if self.currentframe <= 0:
-                    self.currentframe = anim.nFrames-1
-                else:
-                    self.currentframe -= 1
-
-                self.updateFrame()
-                self.playbackSlider.setValue(self.currentframe)
 
         projbox = self.addLeftWidget(gui.GroupBox('Projection'))
 
@@ -111,10 +59,8 @@ class PerspectiveTaskView(gui3d.TaskView):
 
         @self.persButton.mhEvent
         def onClicked(event):
-            G.app.guiCamera.projection = True
-            G.app.guiCamera.fixedRadius = True
-            G.app.modelCamera.projection = True
-            G.app.modelCamera.fixedRadius = True
+            for camera in G.cameras:
+                camera.switchToPerspective()
             if G.app.backgroundGradient:
                 G.app.removeObject(G.app.backgroundGradient)
             G.app.backgroundGradient = None
@@ -124,19 +70,16 @@ class PerspectiveTaskView(gui3d.TaskView):
 
         @self.orthButton.mhEvent
         def onClicked(event):
-            G.app.guiCamera.projection = False
-            G.app.guiCamera.fixedRadius = False
-            G.app.modelCamera.projection = False
-            G.app.modelCamera.fixedRadius = False
-            G.app.loadBackgroundGradient()
-            # G.app.modelCamera.updateCamera()
+            for camera in G.cameras:
+                camera.switchToOrtho()
+            if not G.app.backgroundGradient:
+                G.app.loadBackgroundGradient()
 
         self.fovslider = projbox.addWidget(gui.Slider(label=['Camera focus', '= %.2f'], min=25.0, max=130.0, value=90.0))
         @self.fovslider.mhEvent
         def onChange(value):
-            G.app.modelCamera.setFovAngle(value)
-            G.app.guiCamera.setFovAngle(value)
-            #G.app.modelCamera.updateCamera()
+            for camera in G.cameras:
+                camera.setFovAngle(value)
             G.app.redraw()
 
         posbox = self.addLeftWidget(gui.GroupBox('Position'))
@@ -171,44 +114,6 @@ class PerspectiveTaskView(gui3d.TaskView):
             self.zposslider.setValue (0.0)
             G.app.selectedHuman.setPosition(self.humanPos)
             self.updateFrame()
-
-
-    def updateFrame(self):
-        self.human.setToFrame(self.currentframe)
-        self.human.refreshPose()
-
-    def onShow(self, event):
-        self.currentframe = 0
-        gui3d.TaskView.onShow(self, event)
-        if gui3d.app.getSetting('cameraAutoZoom'):
-            gui3d.app.setGlobalCamera()
-
-        self.playbackSlider.setEnabled(False)
-        self.prevframeButton.setEnabled(False)
-        self.nextframeButton.setEnabled(False)
-        if self.human.getSkeleton():
-            if self.human.getActiveAnimation():
-                maxframes = self.human.getActiveAnimation().nFrames
-                if  maxframes > 1:
-                    self.avFramesText.setText('Available frames: ' + str(maxframes))
-                    self.playbackSlider.setEnabled(True)
-                    self.playbackSlider.setMax(maxframes -1)
-                    self.prevframeButton.setEnabled(True)
-                    self.nextframeButton.setEnabled(True)
-                    self.playbackSlider.setValue(self.currentframe)
-                    self.updateFrame()
-                elif  maxframes == 1:
-                    self.avFramesText.setText('Available frames: 1')
-
-    def onHide(self, event):
-        gui3d.TaskView.onHide(self, event)
-
-    def onHumanChanged(self, event):
-        human = event.human
-        if event.change == 'reset':
-            if self.isShown():
-                # Refresh onShow status
-                self.onShow(event)
 
 
 def load(app):
