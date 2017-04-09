@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -34,8 +34,7 @@
 Abstract
 --------
 
-Experimental plugin based on 3_library_animation.py, which allows to show bvh files
-frame by frame and is able to switch between orthogonal and  perspective view.
+Experimental plugin, which allows to switch between orthogonal and  perspective view.
 """
 
 import mh
@@ -44,7 +43,10 @@ import gui3d
 import log
 from core import G
 from language import language
-
+from qtui import supportsSVG
+from PyQt4 import QtGui
+import getpath as gp
+import os
 
 class PerspectiveTaskView(gui3d.TaskView):
 
@@ -126,13 +128,21 @@ class PerspectiveTaskView(gui3d.TaskView):
             self.isOrthoView = True
 
     def createShortCut(self):
-        action = gui.Action('tglview', language.getLanguageString('Toggle View Mode'), self.toggleView, toggle=True)
+        action = gui.Action('tglview', language.getLanguageString('Toggle view mode'), self.toggleView, toggle=True)
         G.app.mainwin.addAction(action)
+        toolbar = G.app.camera_toolbar
+        toolbar.addAction(action)
         mh.setShortcut(mh.Modifiers.CTRL, mh.Keys.p, action)
 
-def load(app):
-    category = app.getCategory('Community')
-    taskview = category.addTask(PerspectiveTaskView(category))
+        path = os.path.join(gp.getPath('plugins'), '8_community_perspective')
+        if not os.path.isdir(path):
+            path = os.path.join(gp.getSysDataPath('plugins'),'8_community_perspective')
 
-def unload(app):
-    pass
+        if supportsSVG:
+            path = os.path.join(path, 'tglview.svg')
+        else:
+            path = os.path.join(path, 'tglview.png')
+
+        if os.path.isfile(path):
+            icon = QtGui.QIcon(path)
+            action.setIcon(icon)
