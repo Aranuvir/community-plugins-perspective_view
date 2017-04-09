@@ -43,6 +43,7 @@ import gui
 import gui3d
 import log
 from core import G
+from language import language
 
 
 class PerspectiveTaskView(gui3d.TaskView):
@@ -50,6 +51,7 @@ class PerspectiveTaskView(gui3d.TaskView):
     def __init__(self, category):
         gui3d.TaskView.__init__(self, category, 'Perspective')
         self.isOrthoView = True
+        self.createShortCut()
 
         projbox = self.addLeftWidget(gui.GroupBox('Projection'))
 
@@ -59,14 +61,11 @@ class PerspectiveTaskView(gui3d.TaskView):
         @self.persButton.mhEvent
         def onClicked(event):
             self.toggleView()
-            self.isOrthoView=False
 
         self.orthButton = projbox.addWidget(gui.RadioButton(self.projRadioButtonGroup, 'Orthogonal',selected=not G.app.modelCamera.projection))
         @self.orthButton.mhEvent
         def onClicked(event):
             self.toggleView()
-            self.isOrthoView = True
-
 
         self.fovslider = projbox.addWidget(gui.Slider(label='Camera focus= %.2f', min=25.0, max=130.0, value=90.0))
         @self.fovslider.mhEvent
@@ -116,6 +115,7 @@ class PerspectiveTaskView(gui3d.TaskView):
                 G.app.backgroundGradient = None
             self.persButton.setSelected(True)
             self.orthButton.setSelected(False)
+            self.isOrthoView = False
         else:
             for camera in G.cameras:
                 camera.switchToOrtho()
@@ -123,11 +123,16 @@ class PerspectiveTaskView(gui3d.TaskView):
                 G.app.loadBackgroundGradient()
             self.persButton.setSelected(False)
             self.orthButton.setSelected(True)
+            self.isOrthoView = True
+
+    def createShortCut(self):
+        action = gui.Action('tglview', language.getLanguageString('Toggle View Mode'), self.toggleView, toggle=True)
+        G.app.mainwin.addAction(action)
+        mh.setShortcut(mh.Modifiers.CTRL, mh.Keys.p, action)
 
 def load(app):
     category = app.getCategory('Community')
     taskview = category.addTask(PerspectiveTaskView(category))
-
 
 def unload(app):
     pass
