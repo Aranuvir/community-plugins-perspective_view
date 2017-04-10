@@ -134,9 +134,7 @@ class PerspectiveTaskView(gui3d.TaskView):
         toolbar.addAction(action)
         mh.setShortcut(mh.Modifiers.CTRL, mh.Keys.p, action)
 
-        path = os.path.join(gp.getPath('plugins'), '8_community_perspective')
-        if not os.path.isdir(path):
-            path = os.path.join(gp.getSysDataPath('plugins'),'8_community_perspective')
+        path = os.path.dirname(__file__)
 
         if supportsSVG:
             path = os.path.join(path, 'tglview.svg')
